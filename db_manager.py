@@ -7,7 +7,7 @@ def get_db_connection():
         conn = mysql.connector.connect(
             host="localhost",
             user="root",
-            password="mkd@sql", # <-- IMPORTANT: CHANGE THIS
+            password="maitreyi", # <-- IMPORTANT: CHANGE THIS
             database="PeerTutoring"
         )
         return conn
@@ -39,23 +39,135 @@ def add_student(data):
     conn = get_db_connection()
     if not conn:
         return False
-        
+
+    # --- Basic Python-side validation first ---
+    # (Prevents DB errors before they happen)
+    if not data["name"].strip():
+        messagebox.showwarning("Validation Error", "Student name cannot be empty.")
+        return False
+
+    if "@" not in data["email"] or "." not in data["email"]:
+        messagebox.showwarning("Validation Error", "Please enter a valid email address.")
+        return False
+
+    ph = data["ph_no"].strip()
+    if not ph.isdigit() or len(ph) != 10:
+        messagebox.showwarning("Validation Error", "Phone number must be exactly 10 digits.")
+        return False
+
+    if data["year"] not in [1, 2, 3, 4]:
+        messagebox.showwarning("Validation Error", "Year must be between 1 and 4.")
+        return False
+
     query = """
     INSERT INTO Student (name, email, ph_no, role, dept, year) 
     VALUES (%(name)s, %(email)s, %(ph_no)s, %(role)s, %(dept)s, %(year)s)
     """
+
     try:
         cursor = conn.cursor()
         cursor.execute(query, data)
         conn.commit()
+        messagebox.showinfo("Success", f"Student '{data['name']}' added successfully!")
         return True
+
     except mysql.connector.Error as e:
         conn.rollback()
-        messagebox.showerror("Database Error", f"Error adding student: {e}")
+
+        # Handle common SQL errors
+        if e.errno == 1062:
+            # Duplicate entry
+            if "email" in str(e).lower():
+                messagebox.showerror("Duplicate Entry", "This email is already registered.")
+            elif "ph_no" in str(e).lower():
+                messagebox.showerror("Duplicate Entry", "This phone number is already registered.")
+            else:
+                messagebox.showerror("Duplicate Entry", "Duplicate value detected.")
+        elif e.errno == 3819:
+            # Check constraint violation
+            if "year" in str(e).lower():
+                messagebox.showerror("Input Error", "Year must be between 1 and 4.")
+            elif "ph_no" in str(e).lower():
+                messagebox.showerror("Input Error", "Phone number must have 10 digits.")
+            else:
+                messagebox.showerror("Input Error", "Input does not meet required conditions.")
+        else:
+            # Any other DB error
+            messagebox.showerror("Database Error", f"Unexpected error: {e}")
+
         return False
+
     finally:
         if conn:
             conn.close()
+def add_student(data):
+    """Adds a new student to the database. Data is a dictionary."""
+    conn = get_db_connection()
+    if not conn:
+        return False
+
+    # --- Basic Validation ---
+    if not data["name"].strip():
+        messagebox.showwarning("Validation Error", "Student name cannot be empty.")
+        return False
+
+    if "@" not in data["email"] or "." not in data["email"]:
+        messagebox.showwarning("Validation Error", "Please enter a valid email address.")
+        return False
+
+    ph = data["ph_no"].strip()
+    if not ph.isdigit() or len(ph) != 10:
+        messagebox.showwarning("Validation Error", "Phone number must be exactly 10 digits.")
+        return False
+
+    # ✅ Fixed year validation (convert to int first)
+    try:
+        year_value = int(data["year"])
+        if year_value not in [1, 2, 3, 4]:
+            messagebox.showwarning("Validation Error", "Year must be between 1 and 4.")
+            return False
+    except ValueError:
+        messagebox.showwarning("Validation Error", "Year must be a number between 1 and 4.")
+        return False
+
+    query = """
+    INSERT INTO Student (name, email, ph_no, role, dept, year) 
+    VALUES (%(name)s, %(email)s, %(ph_no)s, %(role)s, %(dept)s, %(year)s)
+    """
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query, data)
+        conn.commit()
+        messagebox.showinfo("Success", f"Student '{data['name']}' added successfully!")
+        return True
+
+    except mysql.connector.Error as e:
+        conn.rollback()
+
+        if e.errno == 1062:
+            if "email" in str(e).lower():
+                messagebox.showerror("Duplicate Entry", "This email is already registered.")
+            elif "ph_no" in str(e).lower():
+                messagebox.showerror("Duplicate Entry", "This phone number is already registered.")
+            else:
+                messagebox.showerror("Duplicate Entry", "Duplicate value detected.")
+        elif e.errno == 3819:
+            if "year" in str(e).lower():
+                messagebox.showerror("Input Error", "Year must be between 1 and 4.")
+            elif "ph_no" in str(e).lower():
+                messagebox.showerror("Input Error", "Phone number must have 10 digits.")
+            else:
+                messagebox.showerror("Input Error", "Input does not meet required conditions.")
+        else:
+            messagebox.showerror("Database Error", f"Unexpected error: {e}")
+
+        return False
+
+    finally:
+        if conn:
+            conn.close()
+
 
 def update_student(data):
     """Updates an existing student. Data is a dictionary including student_id."""
