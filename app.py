@@ -5,31 +5,103 @@ import db_manager  # Import our backend file
 class App(tk.Tk):
     def __init__(self):
         super().__init__()
-        self.title("Peer Tutoring Management System")
+        self.title("Peer Tutoring Matching System")
         self.geometry("1200x800") # Made window larger
+                # 🌈 --- Custom Style Setup ---
+        style = ttk.Style(self)
+        self.configure(bg="#EAF4FF")  # soft blue background
+
+        # Use a built-in theme as base
+        style.theme_use("clam")
+
+        # Notebook (Tabs)
+        style.configure("TNotebook", background="#EAF4FF", borderwidth=0)
+        style.configure("TNotebook.Tab", padding=[15, 8], font=("Helvetica", 12, "bold"))
+        style.map("TNotebook.Tab", background=[("selected", "#A5D8FF")])
+
+        # Frames and Labels
+        style.configure("TFrame", background="#EAF4FF")
+        style.configure("TLabelframe", background="#EAF4FF", font=("Helvetica", 11, "bold"))
+        style.configure("TLabelframe.Label", background="#EAF4FF", font=("Helvetica", 11, "bold"))
+
+        # Labels
+        style.configure("TLabel", background="#EAF4FF", font=("Helvetica", 10))
+
+        # Buttons
+        style.configure(
+            "TButton",
+            font=("Helvetica", 10, "bold"),
+            padding=6,
+            relief="flat",
+            background="#007ACC",
+            foreground="white"
+        )
+        style.map(
+            "TButton",
+            background=[("active", "#005A9E"), ("pressed", "#003E73")]
+        )
+
+
+                # --- Create Welcome Page ---
+        self.create_welcome_page()
+
+    def create_welcome_page(self):
+        """Display the initial welcome screen before showing the main app."""
+        self.welcome_frame = ttk.Frame(self, padding=50, style="TFrame")
+        self.welcome_frame.pack(fill=tk.BOTH, expand=True)
+        self.welcome_frame.configure(style="TFrame")
+
+
+        # Title
+        title_label = ttk.Label(
+            self.welcome_frame,
+            text="🎓 PEER TUTORING MATCHING SYSTEM 🎓",
+            font=("Helvetica", 26, "bold"),
+            anchor="center"
+        )
+        title_label.pack(pady=60)
+
+        # Team members
+        team_label = ttk.Label(
+            self.welcome_frame,
+            text="Developed by:\nMahith K Das (SRN: PES2UG23CS318)\nMaitreyi V Raghavan (SRN: PES2UG23CS319)",
+            font=("Helvetica", 16),
+            justify="center"
+        )
+        team_label.pack(pady=40)
+
+        # Continue button
+        continue_btn = ttk.Button(
+            self.welcome_frame,
+            text="Continue →",
+            command=self.show_main_app,
+            style="TButton"
+        )
+
+        continue_btn.pack(pady=30)
+
+    def show_main_app(self):
+        """Destroy welcome screen and load the main application tabs."""
+        self.welcome_frame.destroy()
 
         # --- Create Tabs ---
         self.notebook = ttk.Notebook(self)
-        
+
         self.tab_students = ttk.Frame(self.notebook, padding=10)
         self.tab_teams = ttk.Frame(self.notebook, padding=10)
         self.tab_sessions = ttk.Frame(self.notebook, padding=10)
-        
+
         self.notebook.add(self.tab_students, text="🎓 Student Management")
         self.notebook.add(self.tab_teams, text="👥 Team Management")
         self.notebook.add(self.tab_sessions, text="📘 Session Management")
-        
+
         self.notebook.pack(fill=tk.BOTH, expand=True)
 
-     # ... notebook.pack() ...
-
         # --- Status Bar ---
-        # CREATE THE STATUS BAR *BEFORE* THE TABS
         self.status_label = ttk.Label(self, text="Ready", relief=tk.SUNKEN, anchor="w")
         self.status_label.pack(side=tk.BOTTOM, fill=tk.X)
-        
-        # --- Create each tab's content ---
-        # Now these functions can safely use self.status_label
+
+        # --- Create Tab Contents ---
         self.create_student_tab()
         self.create_team_tab()
         self.create_session_tab()
@@ -84,11 +156,34 @@ class App(tk.Tk):
         ttk.Label(form_frame, text="Phone:").grid(row=2, column=0, padx=5, pady=5, sticky="w")
         ttk.Entry(form_frame, textvariable=self.student_form_vars["ph_no"], width=40).grid(row=2, column=1, padx=5, pady=5)
         ttk.Label(form_frame, text="Dept:").grid(row=0, column=2, padx=5, pady=5, sticky="w")
-        ttk.Entry(form_frame, textvariable=self.student_form_vars["dept"], width=20).grid(row=0, column=3, padx=5, pady=5)
+
+        dept_options = ["CSE", "ECE", "Physics", "Chemistry", "Mathematics"]
+        self.dept_combobox = ttk.Combobox(
+            form_frame,
+            textvariable=self.student_form_vars["dept"],
+            values=dept_options,
+            state="readonly",
+            width=18
+        )
+        self.dept_combobox.grid(row=0, column=3, padx=5, pady=5)
+        self.dept_combobox.set("Select Department")
+
         ttk.Label(form_frame, text="Year:").grid(row=1, column=2, padx=5, pady=5, sticky="w")
-        ttk.Entry(form_frame, textvariable=self.student_form_vars["year"], width=20).grid(row=1, column=3, padx=5, pady=5)
+
+        year_options = ["1", "2", "3", "4"]
+        self.year_combobox = ttk.Combobox(
+            form_frame,
+            textvariable=self.student_form_vars["year"],
+            values=year_options,
+            state="readonly",
+            width=18
+        )
+        self.year_combobox.grid(row=1, column=3, padx=5, pady=5)
+        self.year_combobox.set("Select Year")
+
+
         ttk.Label(form_frame, text="Role:").grid(row=2, column=2, padx=5, pady=5, sticky="w")
-        ttk.Combobox(form_frame, textvariable=self.student_form_vars["role"], values=["mentee", "mentor"]).grid(row=2, column=3, padx=5, pady=5)
+        ttk.Combobox(form_frame, textvariable=self.student_form_vars["role"], values=["mentee", "mentor"], state="readonly").grid(row=2, column=3, padx=5, pady=5)
 
         # --- Button Frame ---
         button_frame = ttk.Frame(main_frame)
